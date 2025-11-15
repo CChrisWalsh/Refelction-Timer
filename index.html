@@ -260,4 +260,308 @@
       .btn-ghost {
         background: transparent;
         color: #bfdbfe;
-        border: 1
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+
+      .sound-indicator {
+        margin-left: auto;
+        font-size: 0.78rem;
+        color: #9ca3af;
+      }
+
+      .footer-note {
+        margin-top: 16px;
+        font-size: 0.78rem;
+        color: #9ca3af;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+    </style>
+
+    <!-- React + ReactDOM + Babel from CDNs -->
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+
+  <body>
+    <!-- Soothing animated background -->
+    <div class="background-orbits">
+      <div class="orbit orbit-1">
+        <div class="orbit-glow"></div>
+      </div>
+      <div class="orbit orbit-2">
+        <div class="orbit-glow"></div>
+      </div>
+      <div class="orbit orbit-3">
+        <div class="orbit-glow"></div>
+      </div>
+    </div>
+
+    <!-- React mount point -->
+    <div id="root" class="app-shell"></div>
+
+    <!-- Your timer app -->
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
+
+      const TOTAL_SECONDS = 5 * 60; // 5 minutes
+
+      const reflectionPrompts = [
+        "Settle in. Take a deep breath and arrive in this moment.",
+        "What is one idea from class content that feels most important?",
+        "How does the content connect to your real work or life?",
+        "What is one question you still have?",
+        "What is one small action you will take after this class?",
+        "Capture your final thought in a single sentence."
+      ];
+
+      // NOTE: direct URL to your hosted song
+      const SONG_URL =
+        "https://raw.githubusercontent.com/CChrisWalsh/calmingmusic/main/reflective-silent-horizons-332367.mp3";
+
+      function formatTime(secs) {
+        const m = String(Math.floor(secs / 60)).padStart(2, "0");
+        const s = String(secs % 60).padStart(2, "0");
+        return `${m}:${s}`;
+      }
+
+      function ReflectionTimer() {
+        const [secondsLeft, setSecondsLeft] = useState(TOTAL_SECONDS);
+        const [isRunning, setIsRunning] = useState(false);
+        const [promptIndex, setPromptIndex] = useState(0);
+        const [isMusicOn, setIsMusicOn] = useState(true);
+
+        const intervalRef = useRef(null);
+        const audioRef = useRef(null);
+
+        // Load audio
+        useEffect(() => {
+          const audio = new Audio(SONG_URL);
+          audio.loop = true;
+          audio.volume = 0.45;
+          audioRef.current = audio;
+
+          return () => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current = null;
+            }
+          };
+        }, []);
+
+        // Timer + prompt progression
+        useEffect(() => {
+          if (!isRunning) {
+            if (intervalRef.current !== null) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            return;
+          }
+
+          intervalRef.current = setInterval(() => {
+            setSecondsLeft((prev) => {
+              if (prev <= 1) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+                setIsRunning(false);
+                return 0;
+              }
+
+              const next = prev - 1;
+              const elapsed = TOTAL_SECONDS - next;
+              const newIndex = Math.min(
+                reflectionPrompts.length - 1,
+                Math.floor(elapsed / 60)
+              );
+              setPromptIndex(newIndex);
+              return next;
+            });
+          }, 1000);
+
+          return () => {
+            if (intervalRef.current !== null) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+          };
+        }, [isRunning]);
+
+        // Handle music start / stop
+        useEffect(() => {
+          const audio = audioRef.current;
+          if (!audio) return;
+
+          if (isRunning && isMusicOn) {
+            audio
+              .play()
+              .catch((e) =>
+                console.warn(
+                  "Browser blocked autoplay; sound will start after first click.",
+                  e
+                )
+              );
+          } else {
+            audio.pause();
+          }
+        }, [isRunning, isMusicOn]);
+
+        const handleStartPause = () => {
+          setIsRunning((prev) => !prev);
+        };
+
+        const handleReset = () => {
+          setIsRunning(false);
+          setSecondsLeft(TOTAL_SECONDS);
+          setPromptIndex(0);
+        };
+
+        const toggleMusic = () => {
+          setIsMusicOn((prev) => !prev);
+        };
+
+        const progress = 1 - secondsLeft / TOTAL_SECONDS;
+        const radius = 110;
+        const circumference = 2 * Math.PI * radius;
+        const dashOffset = circumference * (1 - progress);
+
+        const statusLabel = isRunning
+          ? "In session"
+          : secondsLeft === TOTAL_SECONDS
+          ? "Ready to begin"
+          : "Paused";
+
+        return (
+          <div className="card">
+            <div className="card-header">
+              <div className="title-block">
+                <h1>Reflection Timer</h1>
+                <p>
+                  Guided prompts, focused sound, and a calm visual to support
+                  quiet thinking time.
+                </p>
+              </div>
+              <div className="chip">Class Reflection</div>
+            </div>
+
+            <div className="main-layout">
+              {/* Timer Visual */}
+              <div className="timer-visual">
+                <div className="timer-circle">
+                  <svg>
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r={radius}
+                      stroke="rgba(30,64,175,0.45)"
+                      strokeWidth="10"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r={radius}
+                      stroke="url(#timerGradient)"
+                      strokeWidth="10"
+                      fill="none"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={dashOffset}
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient
+                        id="timerGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop offset="0%" stopColor="#93c5fd" />
+                        <stop offset="50%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#22c55e" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  <div className="timer-inner">
+                    <div className="time-display">
+                      {formatTime(secondsLeft)}
+                    </div>
+                    <div className="status-label">{statusLabel}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prompts + Controls */}
+              <div className="prompt-panel">
+                <div>
+                  <div className="prompt-heading">Reflection Prompt</div>
+                  <div className="prompt-text">
+                    {reflectionPrompts[promptIndex]}
+                    <div className="prompt-step">
+                      Prompt {promptIndex + 1} of {reflectionPrompts.length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="controls">
+                  <button
+                    className="btn-primary"
+                    type="button"
+                    onClick={handleStartPause}
+                  >
+                    {isRunning ? "Pause" : "Start Session"}
+                  </button>
+
+                  <button
+                    className="btn-secondary"
+                    type="button"
+                    onClick={handleReset}
+                  >
+                    Reset
+                  </button>
+
+                  <button
+                    className="btn-ghost"
+                    type="button"
+                    onClick={toggleMusic}
+                  >
+                    {isMusicOn ? "Focused Sound Off" : "Focused Sound On"}
+                  </button>
+
+                  <span className="sound-indicator">
+                    Sound: {isMusicOn ? "On" : "Off"} • Timer: 5 minutes
+                  </span>
+                </div>
+
+                <div className="footer-note">
+                  <span>
+                    Settle in, breathe, and let your thoughts arrive before you
+                    capture them.
+                  </span>
+                  <span>Tip: View in full screen for fewer distractions.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function App() {
+        return <ReflectionTimer />;
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
