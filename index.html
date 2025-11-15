@@ -280,13 +280,13 @@
       }
     </style>
 
-    <!-- React + ReactDOM + Babel from CDNs -->
+    <!-- React 17 + ReactDOM + Babel from CDNs -->
     <script
-      src="https://unpkg.com/react@18/umd/react.development.js"
+      src="https://unpkg.com/react@17/umd/react.development.js"
       crossorigin
     ></script>
     <script
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
       crossorigin
     ></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -309,8 +309,14 @@
     <!-- React mount point -->
     <div id="root" class="app-shell"></div>
 
-    <!-- Your timer app -->
-    <script type="text/babel">
+    <noscript>
+      <div style="color:white; padding:16px; text-align:center;">
+        This timer requires JavaScript to run.
+      </div>
+    </noscript>
+
+    <!-- Timer app -->
+    <script type="text/babel" data-presets="env,react">
       const { useState, useEffect, useRef } = React;
 
       const TOTAL_SECONDS = 5 * 60; // 5 minutes
@@ -324,14 +330,14 @@
         "Capture your final thought in a single sentence."
       ];
 
-      // NOTE: direct URL to your hosted song
+      // Direct URL to your hosted song
       const SONG_URL =
         "https://raw.githubusercontent.com/CChrisWalsh/calmingmusic/main/reflective-silent-horizons-332367.mp3";
 
       function formatTime(secs) {
         const m = String(Math.floor(secs / 60)).padStart(2, "0");
         const s = String(secs % 60).padStart(2, "0");
-        return `${m}:${s}`;
+        return m + ":" + s;
       }
 
       function ReflectionTimer() {
@@ -358,7 +364,7 @@
           };
         }, []);
 
-        // Timer + prompt progression
+        // Timer + prompt logic
         useEffect(() => {
           if (!isRunning) {
             if (intervalRef.current !== null) {
@@ -396,7 +402,7 @@
           };
         }, [isRunning]);
 
-        // Handle music start / stop
+        // Music on/off as timer runs
         useEffect(() => {
           const audio = audioRef.current;
           if (!audio) return;
@@ -404,10 +410,9 @@
           if (isRunning && isMusicOn) {
             audio
               .play()
-              .catch((e) =>
+              .catch(() =>
                 console.warn(
-                  "Browser blocked autoplay; sound will start after first click.",
-                  e
+                  "Autoplay blocked; music will start after user interacts."
                 )
               );
           } else {
@@ -560,8 +565,7 @@
         return <ReflectionTimer />;
       }
 
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
+      ReactDOM.render(<App />, document.getElementById("root"));
     </script>
   </body>
 </html>
